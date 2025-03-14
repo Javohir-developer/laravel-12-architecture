@@ -1,0 +1,27 @@
+services:
+    laravel-test-1:
+        image: image-laravel-test-1
+        container_name: container-laravel-test-1
+        build:
+            context: .
+            dockerfile: Dockerfile
+        volumes:
+            - ../:/var/www/laravel-test-1
+        ports:
+            - "9000:90"
+
+    postgres:
+        image: postgres:13
+        container_name: container-postgres
+        restart: always
+        environment:
+            POSTGRES_USER: testuser
+            POSTGRES_PASSWORD: testpass
+            POSTGRES_DB: testdb
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        ports:
+            - "5432:5432"
+
+volumes:
+    postgres_data:
