@@ -24,4 +24,9 @@ class MovieService
         // Logika qo‘shish mumkin (masalan, shartlar, validatsiya, eventlar)
         return $this->movieRepository->create($data);
     }
+
+    public function getMovieById($id)
+    {
+        return $this->movieRepository->getById($id);
+    }
 }

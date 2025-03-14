@@ -31,4 +31,15 @@ class MovieController extends Controller
 
         return redirect()->route('movies.index');
     }
+
+    public function show($id)
+    {
+        $movie = $this->movieService->getMovieById($id);
+
+        if (!$movie) {
+            return abort(404, 'Movie not found');
+        }
+
+        return view('movies.show', compact('movie'));
+    }
 }

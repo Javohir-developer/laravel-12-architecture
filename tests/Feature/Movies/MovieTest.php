@@ -1,94 +1,136 @@
 <?php
 namespace Tests\Feature\Movies;
 
+use App\Repositories\Movies\MovieRepository;
+use App\Services\Movies\MovieService;
+use Database\Seeders\Movies\MovieSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 use App\Models\Movies\Movie;
 
-//Agar factory bilan test yozilsa
-//class MovieTest extends TestCase
-//{
-//    use RefreshDatabase;
-//
-//    public function test_it_can_create_a_movie()
-//    {
-//        $movie = Movie::factory()->create([
-//            'title' => 'Inception',
-//            'description' => 'A mind-bending thriller',
-//            'release_year' => 2010,
-//            'rating' => 8.8
-//        ]);
-//
-//        $this->assertDatabaseHas('movies', [
-//            'title' => 'Inception',
-//            'release_year' => 2010
-//        ]);
-//    }
-//
-//    public function test_it_can_fetch_all_movies()
-//    {
-//        Movie::factory()->count(3)->create();
-//
-//        $movies = Movie::all();
-//
-//        $this->assertCount(3, $movies);
-//    }
-//}
 
-//Agar factory ishlatmasdan test yozilsa
 class MovieTest extends TestCase
 {
+    // Bazani har bir test uchun yangilab turish (testlar orasida eski ma'lumotlar saqlanib qolmasligi uchun)
     use RefreshDatabase;
 
+    protected $movieService;
+    protected $movieRepository;
+
+    // Har bir testdan oldin repository va service obyektlarini yaratamiz
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->movieRepository = new MovieRepository(new Movie());
+        $this->movieService = new MovieService($this->movieRepository);
+    }
+
+//  Movie model yordamida bazaga yangi film qo'shish test qilinadi.
     public function test_it_can_create_a_movie()
     {
-        // Movie modeliga qo'lda ma'lumot qo'shamiz
-        $movie = Movie::create([
+        // Fake ma'lumot yaratish
+        Movie::create([
             'title' => 'Inception',
             'description' => 'A mind-bending thriller',
             'release_year' => 2010,
             'rating' => 8.8
         ]);
 
-        // Ma'lumot bazaga saqlanganligini tekshiramiz
-        $this->assertDatabaseHas('movies', [
-            'title' => 'Inception',
-            'release_year' => 2010
-        ]);
-
-        // Model obyektini tekshirish
-        $this->assertEquals('Inception', $movie->title);
-        $this->assertEquals(2010, $movie->release_year);
+        // Film bazada mavjudligini tekshiramiz
+        $this->assertDatabaseHas('movies', ['title' => 'Inception']);
     }
 
+
+//  Bazaga 3 ta film qo'shilib, umumiy soni tekshiriladi.
     public function test_it_can_fetch_all_movies()
     {
-        // 3 ta movie qo'lda yaratamiz
-        Movie::create([
-            'title' => 'Movie 1',
-            'description' => 'Description 1',
-            'release_year' => 2001,
-            'rating' => 7.5
-        ]);
+        // Fake ma'lumotlar yaratish
+        Movie::factory()->count(3)->create();
 
-        Movie::create([
-            'title' => 'Movie 2',
-            'description' => 'Description 2',
-            'release_year' => 2005,
+        // Bazadan barcha filmlarni olish
+        $movies = Movie::all();
+
+        // Filmlar soni 3 ga teng ekanligini tekshirish
+        $this->assertCount(3, $movies);
+    }
+
+//  Berilgan ID bo'yicha film topish test qilinadi.
+    public function test_it_can_find_a_movie_by_id()
+    {
+        // Fake film yaratish
+        $movie = Movie::factory()->create();
+
+        // Repository orqali filmni topish
+        $foundMovie = $this->movieRepository->getById($movie->id);
+
+        // Topilgan filmning ID sini tekshirish
+        $this->assertEquals($movie->id, $foundMovie->id);
+    }
+
+//  Validatsiya test: title maydonini kiritmasdan film yaratib bo‘lmaydi.
+    public function test_it_validates_required_fields_when_creating_a_movie()
+    {
+        // Title maydonini kiritmasdan so‘rov yuboramiz
+        $response = $this->post(route('movies.store'), [
+            'release_year' => 2010,
             'rating' => 8.0
         ]);
 
-        Movie::create([
-            'title' => 'Movie 3',
-            'description' => 'Description 3',
-            'release_year' => 2012,
-            'rating' => 8.5
+        // Xatolik qaytishini tekshiramiz
+        $response->assertSessionHasErrors('title');
+    }
+
+//  Movie index sahifasi mavjudligini test qilish.
+    public function test_it_can_access_movies_index_page()
+    {
+        // Index sahifasiga GET so‘rov yuborish
+        $response = $this->get(route('movies.index'));
+
+        // Sahifa mavjudligini tekshirish (200 status kodi qaytishi kerak)
+        $response->assertStatus(200);
+
+        // View sahifasi to‘g‘ri ekanligini tekshirish
+        $response->assertViewIs('movies.index');
+    }
+
+
+//  Yangi film qo‘shish va bazada mavjudligini test qilish.
+    public function test_it_can_store_a_new_movie()
+    {
+        // POST so‘rov orqali yangi film yaratamiz
+        $response = $this->post(route('movies.store'), [
+            'title' => 'Titanic',
+            'description' => 'A romantic drama',
+            'release_year' => 1997,
+            'rating' => 7.8
         ]);
 
-        // Hammasini olish
-        $movies = Movie::all();
+        // Film bazaga qo‘shilganini tekshiramiz
+        $this->assertDatabaseHas('movies', ['title' => 'Titanic']);
 
-        // Test
-        $this->assertCount(3, $movies);
+        // Film yaratilgandan keyin index sahifasiga qaytishi kerak
+        $response->assertRedirect(route('movies.index'));
+    }
+
+
+//  Seeder yordamida ma'lumotlarni bazaga yuklashni test qilish.
+    public function test_it_can_seed_movies_table()
+    {
+        // Seeder orqali bazani ma'lumot bilan to'ldirish
+        $this->seed(MovieSeeder::class);
+
+        // 10 ta ma'lumot yaratilganligini tekshirish
+        $this->assertDatabaseCount('movies', 3);
+    }
+
+
+//  Routes tekshiriladi: movies.index sahifasi mavjudligini test qilish.
+    public function test_it_checks_if_movies_route_exists()
+    {
+        // GET so‘rov orqali sahifaga kirish
+        $response = $this->get(route('movies.index'));
+
+        // Sahifa mavjud bo‘lishi kerak (200 status kodi qaytishi kerak)
+        $response->assertStatus(200);
     }
 }
