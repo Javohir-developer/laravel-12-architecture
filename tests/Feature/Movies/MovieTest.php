@@ -48,7 +48,7 @@ class MovieTest extends TestCase
         Movie::factory()->count(3)->create();
 
         // Bazadan barcha filmlarni olish
-        $movies = Movie::all();
+        $movies = $this->movieService->getAllMovies();
 
         // Filmlar soni 3 ga teng ekanligini tekshirish
         $this->assertCount(3, $movies);
@@ -109,6 +109,38 @@ class MovieTest extends TestCase
         $this->assertDatabaseHas('movies', ['title' => 'Titanic']);
 
         // Film yaratilgandan keyin index sahifasiga qaytishi kerak
+        $response->assertRedirect(route('movies.index'));
+    }
+
+    //  Filmni yangilash testi (update)
+    public function test_it_can_update_a_movie()
+    {
+        // 1. Fake film yaratish
+        $movie = Movie::factory()->create([
+            'title' => 'Old Title',
+            'description' => 'Old description',
+            'release_year' => 2000,
+            'rating' => 7.0
+        ]);
+
+        // 2. Filmni yangi ma'lumot bilan yangilash
+        $response = $this->put(route('movies.update', $movie->id), [
+            'title' => 'New Title',
+            'description' => 'New description',
+            'release_year' => 2020,
+            'rating' => 8.5
+        ]);
+
+        // 3. Film bazada yangilanganini tekshirish
+        $this->assertDatabaseHas('movies', [
+            'id' => $movie->id,
+            'title' => 'New Title',
+            'description' => 'New description',
+            'release_year' => 2020,
+            'rating' => 8.5
+        ]);
+
+        // 4. Yangilanganidan keyin index sahifasiga qaytish kerak
         $response->assertRedirect(route('movies.index'));
     }
 

@@ -25,6 +25,12 @@ class MovieService
         return $this->movieRepository->create($data);
     }
 
+    public function updateMovie($id, array $data)
+    {
+        // Logika qo‘shish mumkin (masalan, shartlar, validatsiya, eventlar)
+        return $this->movieRepository->update($id, $data);
+    }
+
     public function getMovieById($id)
     {
         return $this->movieRepository->getById($id);

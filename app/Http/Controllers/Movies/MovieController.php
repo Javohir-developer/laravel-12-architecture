@@ -28,8 +28,16 @@ class MovieController extends Controller
     public function store(MovieRequest $request)
     {
         $this->movieService->createMovie($request->validated());
-
         return redirect()->route('movies.index');
+    }
+
+
+    public function update(MovieRequest $request, $id)
+    {
+        $movie = $this->movieService->updateMovie($id, $request->validated());
+        return redirect()->route('movies.index')
+            ->with('success', 'Movie updated successfully')
+            ->with('updatedMovie', $movie);
     }
 
     public function show($id)
