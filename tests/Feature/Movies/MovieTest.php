@@ -76,7 +76,7 @@ class MovieTest extends TestCase
             'rating' => 8.0
         ]);
 
-        // Xatolik qaytishini tekshiramiz
+        // Validatsiya ishlashi kerak va 'title' maydoni uchun xatolik qaytishi kerak
         $response->assertSessionHasErrors('title');
     }
 
